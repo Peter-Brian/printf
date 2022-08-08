@@ -1,45 +1,74 @@
 #include "main.h"
+
 /**
- * _printf - is a function that selects the correct function to print.
- * @format: identifier to look for.
- * Return: the length of the string.
+ * _printf - custom function that format and print data
+ * @format:  list of types of arguments passed to the function
+ * Return: int
  */
-int _printf(const char * const format, ...)
+
+int _printf(const char *format, ...)
 {
-	convert_match m[] = {
-		{"%s", printf_string}, {"%c", printf_char},
-		{"%%", printf_37},
-		{"%i", printf_int}, {"%d", printf_dec}, {"%r", printf_srev},
-		{"%R", printf_rot13}, {"%b", printf_bin}, {"%u", printf_unsigned},
-		{"%o", printf_oct}, {"%x", printf_hex}, {"%X", printf_HEX},
-		{"%S", printf_exclusive_string}, {"%p", printf_pointer}
+	va_list list;
+	int idx, j;
+	int len_buf = 0;
+	char *s;
+	char *create_buff;
+
+	type_t ops[] = {
+		{"c", print_c},
+		{"s", print_s},
+		{"i", print_i},
+		{"d", print_i},
+		{"b", print_bin},
+		{NULL, NULL}
 	};
 
-	va_list args;
-	int i = 0, j, len = 0;
-
-	va_start(args, format);
-	if (format == NULL || (format[0] == '%' && format[1] == '\0'))
-		return (-1);
-
-Here:
-	while (format[i] != '\0')
+	create_buff = malloc(1024 * sizeof(char));
+	if (create_buff == NULL)
 	{
-		j = 13;
-		while (j >= 0)
-		{
-			if (m[j].id[0] == format[i] && m[j].id[1] == format[i + 1])
-			{
-				len += m[j].f(args);
-				i = i + 2;
-				goto Here;
-			}
-			j--;
-		}
-		_putchar(format[i]);
-		len++;
-		i++;
+		free(create_buff);
+		return (-1);
 	}
-	va_end(args);
-	return (len);
+	va_start(list, format);
+	if (format == NULL || list == NULL)
+		return (-1);
+	for (idx = 0; format[idx] != '\0'; idx++)
+	{
+		if (format[idx] == '%' && format[idx + 1] == '%')
+			continue;
+		else if (format[idx] == '%')
+		{
+			if (format[idx + 1] == ' ')
+				idx += _position(format, idx);
+			for (j = 0; ops[j].f != NULL; j++)
+			{
+				if (format[idx + 1] == *(ops[j].op))
+				{
+					s = ops[j].f(list);
+					if (s == NULL)
+						return (-1);
+					_strlen(s);
+					_strcat(create_buff, s, len_buf);
+					len_buf += _strlen(s);
+					idx++;
+					break;
+				}
+			}
+			if (ops[j].f == NULL)
+			{
+				create_buff[len_buf] = format[idx];
+				len_buf++;
+			}
+		}
+		else
+		{
+			create_buff[len_buf] = format[idx];
+			len_buf++;
+		}
+	}
+	create_buff[len_buf] = '\0';
+	write(1, create_buff, len_buf);
+	va_end(list);
+	free(create_buff);
+	return (len_buf);
 }
